@@ -15,7 +15,7 @@ fi
 
 INSTALL_SCRIPT=$DISTRO
 if [ "$DISTRO" = "ubuntu" ]; then
-  INSTALL_SCRIPT="debian"
+  INSTALL_SCRIPT="ubuntu"
 fi
 
 rm -rf $TMP
