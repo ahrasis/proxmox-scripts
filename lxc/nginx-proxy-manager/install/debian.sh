@@ -90,14 +90,14 @@ runcmd pip install --no-cache-dir cffi certbot
 # Install openresty
 log "Installing openresty"
 DISTRO_VER=$(. /etc/os-release && echo "$VERSION_ID")
-if [[ $DISTRO_ID == "ubuntu" &&  $DISTRO_VER >= "22.04" ]]; then
+if [[ $DISTRO_ID = "ubuntu" ] && [ $DISTRO_VER > "21" ]]; then
   wget -qO - https://openresty.org/package/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/openresty.gpg
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/openresty.gpg] http://openresty.org/package/ubuntu $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/openresty.list > /dev/null
 else
   wget -qO - https://openresty.org/package/pubkey.gpg | apt-key add -
 fi
 _distro_release=$(wget $WGETOPT "http://openresty.org/package/$DISTRO_ID/dists/" -O - | grep -o "$DISTRO_CODENAME" | head -n1 || true)
-if [[ $DISTRO_ID == "ubuntu" &&  $DISTRO_VER < "22.04" ]]; then
+if [[ $DISTRO_ID == "ubuntu" ] && [ $DISTRO_VER < "22" ]]; then
   echo "deb [trusted=yes] http://openresty.org/package/$DISTRO_ID ${_distro_release:-focal} main" | tee /etc/apt/sources.list.d/openresty.list
 else
   echo "deb [trusted=yes] http://openresty.org/package/$DISTRO_ID ${_distro_release:-bullseye} openresty" | tee /etc/apt/sources.list.d/openresty.list
