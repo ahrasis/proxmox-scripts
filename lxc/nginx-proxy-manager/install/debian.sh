@@ -13,6 +13,7 @@ WGETOPT="-t 1 -T 15 -q"
 DEVDEPS="git build-essential libffi-dev libssl-dev python3-dev"
 NPMURL="https://github.com/NginxProxyManager/nginx-proxy-manager"
 
+export DEBIAN_FRONTEND=noninteractive
 cd $TEMPDIR
 touch $TEMPLOG
 
@@ -44,12 +45,12 @@ trapexit() {
   fi
   
   # Cleanup
-  #apt-get remove --purge -y $DEVDEPS -qq &>/dev/null
+  apt -y purge $DEVDEPS -qq &>/dev/null
   #apt-get autoremove -y -qq &>/dev/null
   #apt-get clean
   #rm -rf $TEMPDIR
   #rm -rf /root/.cache
-  apt -y autoremove && apt -y autoclean && rm -rf $TEMPDIR && rm -rf /root/.cache
+  rm -rf $TEMPDIR && rm -rf /root/.cache
 }
 
 # Check for previous install
@@ -70,13 +71,12 @@ fi
 
 # Install dependencies
 log "Installing dependencies"
-runcmd apt-get update
-export DEBIAN_FRONTEND=noninteractive
-runcmd 'apt -y install --no-install-recommends $DEVDEPS gnupg openssl ca-certificates apache2-utils logrotate'
+runcmd 'apt update && apt -y upgrade && apt -y autoremove && apt -y autoclean'
+runcmd 'apt -y install --no-install-recommends $DEVDEPS wget gnupg ca-certificates openssl apache2-utils logrotate'
 
 # Install Python
 log "Installing python"
-runcmd apt -y install -q --no-install-recommends python3 python3-distutils python3-venv
+runcmd 'apt -y install -q --no-install-recommends python3 python3-distutils python3-venv'
 python3 -m venv /opt/certbot/
 export PATH=/opt/certbot/bin:$PATH
 grep -qo "/opt/certbot" /etc/environment || echo "$PATH" > /etc/environment
@@ -89,9 +89,15 @@ runcmd pip install --no-cache-dir cffi certbot
 
 # Install openresty
 log "Installing openresty"
-wget -qO - https://openresty.org/package/pubkey.gpg | apt-key add -
+DISTRO_VER=$(. /etc/os-release && echo "$VERSION_ID")
+if [[ $DISTRO_ID == "ubuntu" &&  $DISTRO_ID >= "22.04" ]]; then
+  wget -qO - https://openresty.org/package/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/openresty.gpg
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/openresty.gpg] http://openresty.org/package/ubuntu $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/openresty.list > /dev/null
+else
+  wget -qO - https://openresty.org/package/pubkey.gpg | apt-key add -
+fi
 _distro_release=$(wget $WGETOPT "http://openresty.org/package/$DISTRO_ID/dists/" -O - | grep -o "$DISTRO_CODENAME" | head -n1 || true)
-if [ $DISTRO_ID = "ubuntu" ]; then
+if [[ $DISTRO_ID == "ubuntu" &&  $DISTRO_ID < "22.04" ]]; then
   echo "deb [trusted=yes] http://openresty.org/package/$DISTRO_ID ${_distro_release:-focal} main" | tee /etc/apt/sources.list.d/openresty.list
 else
   echo "deb [trusted=yes] http://openresty.org/package/$DISTRO_ID ${_distro_release:-bullseye} openresty" | tee /etc/apt/sources.list.d/openresty.list
