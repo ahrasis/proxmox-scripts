@@ -100,7 +100,7 @@ runcmd apt update && apt -y upgrade && apt -y install -q --no-install-recommends
 
 # Install nodejs
 log "Installing nodejs"
-runcmd wget -qO - https://deb.nodesource.com/setup_20.x | bash -
+runcmd wget -qO - https://deb.nodesource.com/setup_18.x | bash -
 runcmd apt-get install -y -q --no-install-recommends nodejs
 runcmd npm install --global yarn
 
